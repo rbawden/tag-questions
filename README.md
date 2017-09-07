@@ -49,5 +49,17 @@ Steps to recreate English TQ corpus annotations:
 2. `make annotate` (to get line number of each type of tag question)
 3. `make getsentences` (to extract the sentences corresponding to the line numbers)
 
-## Translate senten
+## Translate sentences
 1. Store translations in ```translations/langpair```
+
+
+* Store all translations in translations/langpair and give them the name testset.translated.{cs,de}-en, where testset is trainsmall, devsmall or testsmall
+* Czech and German to English translation (Nematus):
+  		* Download Czech and German to English systems from here (WMT'16 UEdin submissions - Sennrich et al., 2016)
+		* Decode trainsmall, devsmall and testsmall sets using the translation scripts provided via the link just above
+* French-English translation (Moses model)
+  		* Select 3M random sentences from the train dataset for training and 2k different random sentences from the same train set for tuning.
+		* Data cleaned with MosesCleaner, duplicates removed
+		* 3 4-gram language models trained using KenLM on (i) Europarl, (ii) Ted-talks (when available), (iii) train set of OpenSubtitles2016
+		* Symmetrised alignments, tuned with Kbmira
+* Tokenise all translations: ``MElt -l en -t -x -no_s -M -K and name as testset.translated.melttok.{cs,de}-en``
