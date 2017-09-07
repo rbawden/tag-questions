@@ -1,0 +1,224 @@
+MAINDIR=/Users/rbawden/Documents/work/tag-questions-opensubs
+SCRIPTDIR=/Users/rbawden/Documents/work/tag-questions-opensubs/scripts
+
+.SECONDARY:
+
+#----------------- annotate for tag questions
+
+annotate: annotate.train.$(SRC)-$(TRG) annotate.dev1.$(SRC)-$(TRG) annotate.dev2.$(SRC)-$(TRG) \
+		annotate.test.$(SRC)-$(TRG) checkcounts.train.$(SRC)-$(TRG) checkcounts.dev1.$(SRC)-$(TRG) \
+		checkcounts.dev2.$(SRC)-$(TRG) checkcounts.test.$(SRC)-$(TRG)
+
+annotate.%.$(SRC)-$(TRG): linenumbers \
+		linenumbers/en_tag_questions.%.list.$(SRC)-$(TRG) \
+		linenumbers/en_tag_questions_gram.%.list.$(SRC)-$(TRG) \
+		linenumbers/en_tag_questions_misc.%.list.$(SRC)-$(TRG) \
+		linenumbers/en_tag_questions_gram-posanchor.%.list.$(SRC)-$(TRG) \
+		linenumbers/en_tag_questions_gram-neganchor.%.list.$(SRC)-$(TRG) \
+		linenumbers/en_tag_questions_gram-postag.%.list.$(SRC)-$(TRG) \
+		linenumbers/en_tag_questions_gram-negtag.%.list.$(SRC)-$(TRG) \
+		linenumbers/en_tag_questions_gram-postag-posanchor.%.list.$(SRC)-$(TRG) \
+		linenumbers/en_tag_questions_gram-postag-neganchor.%.list.$(SRC)-$(TRG) \
+		linenumbers/en_tag_questions_gram-negtag-posanchor.%.list.$(SRC)-$(TRG) \
+		linenumbers/en_tag_questions_gram-negtag-neganchor.%.list.$(SRC)-$(TRG) \
+		linenumbers/en_tag_questions_misc-posanchor.%.list.$(SRC)-$(TRG) \
+		linenumbers/en_tag_questions_misc-neganchor.%.list.$(SRC)-$(TRG)
+	touch $@
+
+checkcounts.%.$(SRC)-$(TRG): annotate.%.$(SRC)-$(TRG)
+	bash $(SCRIPTDIR)/check_counts.sh $(MAINDIR)/subcorpora/$(SRC)-$(TRG)/linenumbers $* $(SRC)-$(TRG) > $@
+
+linenumbers:
+	[ -d $@ ] || mkdir $@
+
+sentences:
+	[ -d $@ ] || mkdir $@
+
+linenumbers/en_tag_questions.%.list.$(SRC)-$(TRG): $(MAINDIR)/datasets/$(SRC)-$(TRG)/%.truecased.$(SRC)-$(TRG).$(SRC).gz \
+		$(MAINDIR)/datasets/$(SRC)-$(TRG)/%.truecased.$(SRC)-$(TRG).$(TRG).gz
+	python3 $(SCRIPTDIR)/classify_tag_questions2.py $(MAINDIR)/datasets/$(SRC)-$(TRG)/$*.truecased.$(SRC)-$(TRG).$(TRG).gz \
+		$(MAINDIR)/datasets/$(SRC)-$(TRG)/$*.truecased.$(SRC)-$(TRG).$(SRC).gz en all > $@
+
+linenumbers/en_tag_questions_gram.%.list.$(SRC)-$(TRG): $(MAINDIR)/datasets/$(SRC)-$(TRG)/%.truecased.$(SRC)-$(TRG).$(SRC).gz \
+		$(MAINDIR)/datasets/$(SRC)-$(TRG)/%.truecased.$(SRC)-$(TRG).$(TRG).gz
+	python3 $(SCRIPTDIR)/classify_tag_questions2.py $(MAINDIR)/datasets/$(SRC)-$(TRG)/$*.truecased.$(SRC)-$(TRG).$(TRG).gz \
+		$(MAINDIR)/datasets/$(SRC)-$(TRG)/$*.truecased.$(SRC)-$(TRG).$(SRC).gz en gram > $@
+
+linenumbers/en_tag_questions_misc.%.list.$(SRC)-$(TRG): $(MAINDIR)/datasets/$(SRC)-$(TRG)/%.truecased.$(SRC)-$(TRG).$(SRC).gz \
+		$(MAINDIR)/datasets/$(SRC)-$(TRG)/%.truecased.$(SRC)-$(TRG).$(TRG).gz
+	python3 $(SCRIPTDIR)/classify_tag_questions2.py $(MAINDIR)/datasets/$(SRC)-$(TRG)/$*.truecased.$(SRC)-$(TRG).$(TRG).gz \
+		$(MAINDIR)/datasets/$(SRC)-$(TRG)/$*.truecased.$(SRC)-$(TRG).$(SRC).gz en misc > $@
+
+linenumbers/en_tag_questions_misc-posanchor.%.list.$(SRC)-$(TRG): $(MAINDIR)/datasets/$(SRC)-$(TRG)/%.truecased.$(SRC)-$(TRG).$(SRC).gz \
+		$(MAINDIR)/datasets/$(SRC)-$(TRG)/%.truecased.$(SRC)-$(TRG).$(TRG).gz
+	python3 $(SCRIPTDIR)/classify_tag_questions2.py $(MAINDIR)/datasets/$(SRC)-$(TRG)/$*.truecased.$(SRC)-$(TRG).$(TRG).gz \
+		$(MAINDIR)/datasets/$(SRC)-$(TRG)/$*.truecased.$(SRC)-$(TRG).$(SRC).gz en miscposanchor > $@
+
+linenumbers/en_tag_questions_misc-neganchor.%.list.$(SRC)-$(TRG): $(MAINDIR)/datasets/$(SRC)-$(TRG)/%.truecased.$(SRC)-$(TRG).$(SRC).gz \
+		$(MAINDIR)/datasets/$(SRC)-$(TRG)/%.truecased.$(SRC)-$(TRG).$(TRG).gz
+	python3 $(SCRIPTDIR)/classify_tag_questions2.py $(MAINDIR)/datasets/$(SRC)-$(TRG)/$*.truecased.$(SRC)-$(TRG).$(TRG).gz \
+		$(MAINDIR)/datasets/$(SRC)-$(TRG)/$*.truecased.$(SRC)-$(TRG).$(SRC).gz en miscneganchor > $@
+
+linenumbers/en_tag_questions_gram-postag.%.list.$(SRC)-$(TRG): $(MAINDIR)/datasets/$(SRC)-$(TRG)/%.truecased.$(SRC)-$(TRG).$(SRC).gz \
+		$(MAINDIR)/datasets/$(SRC)-$(TRG)/%.truecased.$(SRC)-$(TRG).$(TRG).gz
+	python3 $(SCRIPTDIR)/classify_tag_questions2.py $(MAINDIR)/datasets/$(SRC)-$(TRG)/$*.truecased.$(SRC)-$(TRG).$(TRG).gz \
+		$(MAINDIR)/datasets/$(SRC)-$(TRG)/$*.truecased.$(SRC)-$(TRG).$(SRC).gz en grampostag > $@
+
+linenumbers/en_tag_questions_posanchor.%.list.$(SRC)-$(TRG): $(MAINDIR)/datasets/$(SRC)-$(TRG)/%.truecased.$(SRC)-$(TRG).$(SRC).gz \
+		$(MAINDIR)/datasets/$(SRC)-$(TRG)/%.truecased.$(SRC)-$(TRG).$(TRG).gz
+	python3 $(SCRIPTDIR)/classify_tag_questions2.py $(MAINDIR)/datasets/$(SRC)-$(TRG)/$*.truecased.$(SRC)-$(TRG).$(TRG).gz \
+		$(MAINDIR)/datasets/$(SRC)-$(TRG)/$*.truecased.$(SRC)-$(TRG).$(SRC).gz en grampostag > $@
+
+linenumbers/en_tag_questions_neganchor.%.list.$(SRC)-$(TRG): $(MAINDIR)/datasets/$(SRC)-$(TRG)/%.truecased.$(SRC)-$(TRG).$(SRC).gz \
+		$(MAINDIR)/datasets/$(SRC)-$(TRG)/%.truecased.$(SRC)-$(TRG).$(TRG).gz
+	python3 $(SCRIPTDIR)/classify_tag_questions2.py $(MAINDIR)/datasets/$(SRC)-$(TRG)/$*.truecased.$(SRC)-$(TRG).$(TRG).gz \
+		$(MAINDIR)/datasets/$(SRC)-$(TRG)/$*.truecased.$(SRC)-$(TRG).$(SRC).gz en grampostag > $@
+
+linenumbers/en_tag_questions_gram-negtag.%.list.$(SRC)-$(TRG): $(MAINDIR)/datasets/$(SRC)-$(TRG)/%.truecased.$(SRC)-$(TRG).$(SRC).gz \
+		$(MAINDIR)/datasets/$(SRC)-$(TRG)/%.truecased.$(SRC)-$(TRG).$(TRG).gz
+	python3 $(SCRIPTDIR)/classify_tag_questions2.py $(MAINDIR)/datasets/$(SRC)-$(TRG)/$*.truecased.$(SRC)-$(TRG).$(TRG).gz \
+		$(MAINDIR)/datasets/$(SRC)-$(TRG)/$*.truecased.$(SRC)-$(TRG).$(SRC).gz en gramnegtag > $@
+
+linenumbers/en_tag_questions_gram-posanchor.%.list.$(SRC)-$(TRG): $(MAINDIR)/datasets/$(SRC)-$(TRG)/%.truecased.$(SRC)-$(TRG).$(SRC).gz \
+		$(MAINDIR)/datasets/$(SRC)-$(TRG)/%.truecased.$(SRC)-$(TRG).$(TRG).gz
+	python3 $(SCRIPTDIR)/classify_tag_questions2.py $(MAINDIR)/datasets/$(SRC)-$(TRG)/$*.truecased.$(SRC)-$(TRG).$(TRG).gz \
+		$(MAINDIR)/datasets/$(SRC)-$(TRG)/$*.truecased.$(SRC)-$(TRG).$(SRC).gz en gramposanchor > $@
+
+linenumbers/en_tag_questions_gram-neganchor.%.list.$(SRC)-$(TRG): $(MAINDIR)/datasets/$(SRC)-$(TRG)/%.truecased.$(SRC)-$(TRG).$(SRC).gz \
+		$(MAINDIR)/datasets/$(SRC)-$(TRG)/%.truecased.$(SRC)-$(TRG).$(TRG).gz
+	python3 $(SCRIPTDIR)/classify_tag_questions2.py $(MAINDIR)/datasets/$(SRC)-$(TRG)/$*.truecased.$(SRC)-$(TRG).$(TRG).gz \
+		$(MAINDIR)/datasets/$(SRC)-$(TRG)/$*.truecased.$(SRC)-$(TRG).$(SRC).gz en gramneganchor > $@
+
+linenumbers/en_tag_questions_gram-postag.%.list.$(SRC)-$(TRG): $(MAINDIR)/datasets/$(SRC)-$(TRG)/%.truecased.$(SRC)-$(TRG).$(SRC).gz \
+		$(MAINDIR)/datasets/$(SRC)-$(TRG)/%.truecased.$(SRC)-$(TRG).$(TRG).gz
+	python3 $(SCRIPTDIR)/classify_tag_questions2.py $(MAINDIR)/datasets/$(SRC)-$(TRG)/$*.truecased.$(SRC)-$(TRG).$(TRG).gz \
+		$(MAINDIR)/datasets/$(SRC)-$(TRG)/$*.truecased.$(SRC)-$(TRG).$(SRC).gz en grampostag > $@
+
+linenumbers/en_tag_questions_gram-negtag.%.list.$(SRC)-$(TRG): $(MAINDIR)/datasets/$(SRC)-$(TRG)/%.truecased.$(SRC)-$(TRG).$(SRC).gz \
+		$(MAINDIR)/datasets/$(SRC)-$(TRG)/%.truecased.$(SRC)-$(TRG).$(TRG).gz
+	python3 $(SCRIPTDIR)/classify_tag_questions2.py $(MAINDIR)/datasets/$(SRC)-$(TRG)/$*.truecased.$(SRC)-$(TRG).$(TRG).gz \
+		$(MAINDIR)/datasets/$(SRC)-$(TRG)/$*.truecased.$(SRC)-$(TRG).$(SRC).gz en gramnegtag > $@
+
+linenumbers/en_tag_questions_gram-postag-posanchor.%.list.$(SRC)-$(TRG): $(MAINDIR)/datasets/$(SRC)-$(TRG)/%.truecased.$(SRC)-$(TRG).$(SRC).gz \
+		$(MAINDIR)/datasets/$(SRC)-$(TRG)/%.truecased.$(SRC)-$(TRG).$(TRG).gz
+	python3 $(SCRIPTDIR)/classify_tag_questions2.py $(MAINDIR)/datasets/$(SRC)-$(TRG)/$*.truecased.$(SRC)-$(TRG).$(TRG).gz \
+		$(MAINDIR)/datasets/$(SRC)-$(TRG)/$*.truecased.$(SRC)-$(TRG).$(SRC).gz en grampostag-posanchor > $@
+
+linenumbers/en_tag_questions_gram-postag-neganchor.%.list.$(SRC)-$(TRG): $(MAINDIR)/datasets/$(SRC)-$(TRG)/%.truecased.$(SRC)-$(TRG).$(SRC).gz \
+		$(MAINDIR)/datasets/$(SRC)-$(TRG)/%.truecased.$(SRC)-$(TRG).$(TRG).gz
+	python3 $(SCRIPTDIR)/classify_tag_questions2.py $(MAINDIR)/datasets/$(SRC)-$(TRG)/$*.truecased.$(SRC)-$(TRG).$(TRG).gz \
+		$(MAINDIR)/datasets/$(SRC)-$(TRG)/$*.truecased.$(SRC)-$(TRG).$(SRC).gz en grampostag-neganchor > $@
+
+linenumbers/en_tag_questions_gram-negtag-neganchor.%.list.$(SRC)-$(TRG): $(MAINDIR)/datasets/$(SRC)-$(TRG)/%.truecased.$(SRC)-$(TRG).$(SRC).gz \
+		$(MAINDIR)/datasets/$(SRC)-$(TRG)/%.truecased.$(SRC)-$(TRG).$(TRG).gz
+	python3 $(SCRIPTDIR)/classify_tag_questions2.py $(MAINDIR)/datasets/$(SRC)-$(TRG)/$*.truecased.$(SRC)-$(TRG).$(TRG).gz \
+		$(MAINDIR)/datasets/$(SRC)-$(TRG)/$*.truecased.$(SRC)-$(TRG).$(SRC).gz en gramnegtag-neganchor > $@
+
+linenumbers/en_tag_questions_gram-negtag-posanchor.%.list.$(SRC)-$(TRG): $(MAINDIR)/datasets/$(SRC)-$(TRG)/%.truecased.$(SRC)-$(TRG).$(SRC).gz \
+		$(MAINDIR)/datasets/$(SRC)-$(TRG)/%.truecased.$(SRC)-$(TRG).$(TRG).gz
+	python3 $(SCRIPTDIR)/classify_tag_questions2.py $(MAINDIR)/datasets/$(SRC)-$(TRG)/$*.truecased.$(SRC)-$(TRG).$(TRG).gz \
+		$(MAINDIR)/datasets/$(SRC)-$(TRG)/$*.truecased.$(SRC)-$(TRG).$(SRC).gz en gramnegtag-posanchor > $@
+
+
+# extract sentences
+
+getsentences: getsentences.train.$(SRC)-$(TRG) getsentences.dev1.$(SRC)-$(TRG) \
+		getsentences.dev2.$(SRC)-$(TRG) getsentences.test.$(SRC)-$(TRG)
+	touch $@
+
+getsentences.%.$(SRC)-$(TRG): getsentences.%.$(SRC)-$(TRG).$(SRC) getsentences.%.$(SRC)-$(TRG).$(TRG)
+	touch $@
+
+getsentences.%.$(SRC)-$(TRG).$(SRC): sentences/en_tag_questions.%.$(SRC)-$(TRG).$(SRC).gz \
+		sentences/en_tag_questions_gram.%.$(SRC)-$(TRG).$(SRC).gz sentences/en_tag_questions_misc.%.$(SRC)-$(TRG).$(SRC).gz \
+		sentences/en_tag_questions_gram-postag.%.$(SRC)-$(TRG).$(SRC).gz sentences/en_tag_questions_gram-negtag.%.$(SRC)-$(TRG).$(SRC).gz \
+		sentences/en_tag_questions_gram-posanchor.%.$(SRC)-$(TRG).$(SRC).gz sentences/en_tag_questions_gram-neganchor.%.$(SRC)-$(TRG).$(SRC).gz \
+		sentences/en_tag_questions_misc-posanchor.%.$(SRC)-$(TRG).$(SRC).gz sentences/en_tag_questions_misc-neganchor.%.$(SRC)-$(TRG).$(SRC).gz \
+		sentences/en_tag_questions_gram-postag-posanchor.%.$(SRC)-$(TRG).$(SRC).gz sentences/en_tag_questions_gram-postag-neganchor.%.$(SRC)-$(TRG).$(SRC).gz \
+		sentences/en_tag_questions_gram-negtag-posanchor.%.$(SRC)-$(TRG).$(SRC).gz sentences/en_tag_questions_gram-negtag-neganchor.%.$(SRC)-$(TRG).$(SRC).gz
+	touch $@
+
+getsentences.%.$(SRC)-$(TRG).$(TRG): sentences/en_tag_questions.%.$(SRC)-$(TRG).$(TRG).gz \
+		sentences/en_tag_questions_gram.%.$(SRC)-$(TRG).$(TRG).gz sentences/en_tag_questions_misc.%.$(SRC)-$(TRG).$(TRG).gz \
+		sentences/en_tag_questions_gram-postag.%.$(SRC)-$(TRG).$(TRG).gz sentences/en_tag_questions_gram-negtag.%.$(SRC)-$(TRG).$(TRG).gz \
+		sentences/en_tag_questions_gram-posanchor.%.$(SRC)-$(TRG).$(TRG).gz sentences/en_tag_questions_gram-neganchor.%.$(SRC)-$(TRG).$(TRG).gz \
+		sentences/en_tag_questions_misc-posanchor.%.$(SRC)-$(TRG).$(TRG).gz sentences/en_tag_questions_misc-neganchor.%.$(SRC)-$(TRG).$(TRG).gz \
+		sentences/en_tag_questions_gram-postag-posanchor.%.$(SRC)-$(TRG).$(TRG).gz sentences/en_tag_questions_gram-postag-neganchor.%.$(SRC)-$(TRG).$(TRG).gz \
+		sentences/en_tag_questions_gram-negtag-posanchor.%.$(SRC)-$(TRG).$(TRG).gz \
+		sentences/en_tag_questions_gram-negtag-neganchor.%.$(SRC)-$(TRG).$(TRG).gz
+	touch $@
+
+
+sentences/en_tag_questions.train.$(SRC)-$(TRG).%.gz: $(MAINDIR)/datasets/$(SRC)-$(TRG)/train.truecased.$(SRC)-$(TRG).%.gz \
+		$(MAINDIR)/subcorpora/$(SRC)-$(TRG)/linenumbers/en_tag_questions.train.list.$(SRC)-$(TRG)
+	[ -d sentences ] || mkdir sentences
+	python3 $(SCRIPTDIR)/get-these-lines-from-numbers.py $(MAINDIR)/datasets/$(SRC)-$(TRG)/train.truecased.$(SRC)-$(TRG).$*.gz \
+		$(MAINDIR)/subcorpora/$(SRC)-$(TRG)/linenumbers/en_tag_questions.train.list.$(SRC)-$(TRG) | gzip > $@
+
+sentences/en_tag_questions.dev1.$(SRC)-$(TRG).%.gz: $(MAINDIR)/datasets/$(SRC)-$(TRG)/dev1.truecased.$(SRC)-$(TRG).%.gz \
+		$(MAINDIR)/subcorpora/$(SRC)-$(TRG)/linenumbers/en_tag_questions.dev1.list.$(SRC)-$(TRG)
+	[ -d sentences ] || mkdir sentences
+	python3 $(SCRIPTDIR)/get-these-lines-from-numbers.py $(MAINDIR)/datasets/$(SRC)-$(TRG)/dev1.truecased.$(SRC)-$(TRG).$*.gz \
+		$(MAINDIR)/subcorpora/$(SRC)-$(TRG)/linenumbers/en_tag_questions.dev1.list.$(SRC)-$(TRG) | gzip > $@
+
+sentences/en_tag_questions.dev2.$(SRC)-$(TRG).%.gz: $(MAINDIR)/datasets/$(SRC)-$(TRG)/dev2.truecased.$(SRC)-$(TRG).%.gz \
+		$(MAINDIR)/subcorpora/$(SRC)-$(TRG)/linenumbers/en_tag_questions.dev2.list.$(SRC)-$(TRG)
+	[ -d sentences ] || mkdir sentences
+	python3 $(SCRIPTDIR)/get-these-lines-from-numbers.py $(MAINDIR)/datasets/$(SRC)-$(TRG)/dev2.truecased.$(SRC)-$(TRG).$*.gz \
+		$(MAINDIR)/subcorpora/$(SRC)-$(TRG)/linenumbers/en_tag_questions.dev2.list.$(SRC)-$(TRG) | gzip > $@
+
+sentences/en_tag_questions.test.$(SRC)-$(TRG).%.gz: $(MAINDIR)/datasets/$(SRC)-$(TRG)/test.truecased.$(SRC)-$(TRG).%.gz \
+		$(MAINDIR)/subcorpora/$(SRC)-$(TRG)/linenumbers/en_tag_questions.test.list.$(SRC)-$(TRG)
+	[ -d sentences ] || mkdir sentences
+	python3 $(SCRIPTDIR)/get-these-lines-from-numbers.py $(MAINDIR)/datasets/$(SRC)-$(TRG)/test.truecased.$(SRC)-$(TRG).$*.gz \
+		$(MAINDIR)/subcorpora/$(SRC)-$(TRG)/linenumbers/en_tag_questions.test.list.$(SRC)-$(TRG) | gzip > $@
+
+
+sentences/en_tag_questions%.train.$(SRC)-$(TRG).$(SRC).gz: $(MAINDIR)/datasets/$(SRC)-$(TRG)/train.truecased.$(SRC)-$(TRG).$(SRC).gz \
+		$(MAINDIR)/subcorpora/$(SRC)-$(TRG)/linenumbers/en_tag_questions%.train.list.$(SRC)-$(TRG)
+	[ -d sentences ] || mkdir sentences
+	python3 $(SCRIPTDIR)/get-these-lines-from-numbers.py $(MAINDIR)/datasets/$(SRC)-$(TRG)/train.truecased.$(SRC)-$(TRG).$(SRC).gz \
+		$(MAINDIR)/subcorpora/$(SRC)-$(TRG)/linenumbers/en_tag_questions$*.train.list.$(SRC)-$(TRG) | gzip > $@
+
+sentences/en_tag_questions%.dev1.$(SRC)-$(TRG).$(SRC).gz: $(MAINDIR)/datasets/$(SRC)-$(TRG)/dev1.truecased.$(SRC)-$(TRG).$(SRC).gz \
+		$(MAINDIR)/subcorpora/$(SRC)-$(TRG)/linenumbers/en_tag_questions%.dev1.list.$(SRC)-$(TRG)
+	[ -d sentences ] || mkdir sentences
+	python3 $(SCRIPTDIR)/get-these-lines-from-numbers.py $(MAINDIR)/datasets/$(SRC)-$(TRG)/dev1.truecased.$(SRC)-$(TRG).$(SRC).gz \
+		$(MAINDIR)/subcorpora/$(SRC)-$(TRG)/linenumbers/en_tag_questions$*.dev1.list.$(SRC)-$(TRG) | gzip > $@
+
+sentences/en_tag_questions%.dev2.$(SRC)-$(TRG).$(SRC).gz: $(MAINDIR)/datasets/$(SRC)-$(TRG)/dev2.truecased.$(SRC)-$(TRG).$(SRC).gz \
+		$(MAINDIR)/subcorpora/$(SRC)-$(TRG)/linenumbers/en_tag_questions%.dev2.list.$(SRC)-$(TRG)
+	python3 $(SCRIPTDIR)/get-these-lines-from-numbers.py $(MAINDIR)/datasets/$(SRC)-$(TRG)/dev2.truecased.$(SRC)-$(TRG).$(SRC).gz \
+		$(MAINDIR)/subcorpora/$(SRC)-$(TRG)/linenumbers/en_tag_questions$*.dev2.list.$(SRC)-$(TRG) | gzip > $@
+
+sentences/en_tag_questions%.test.$(SRC)-$(TRG).$(SRC).gz: $(MAINDIR)/datasets/$(SRC)-$(TRG)/test.truecased.$(SRC)-$(TRG).$(SRC).gz \
+		$(MAINDIR)/subcorpora/$(SRC)-$(TRG)/linenumbers/en_tag_questions%.test.list.$(SRC)-$(TRG)
+	[ -d sentences ] || mkdir sentences
+	python3 $(SCRIPTDIR)/get-these-lines-from-numbers.py $(MAINDIR)/datasets/$(SRC)-$(TRG)/test.truecased.$(SRC)-$(TRG).$(SRC).gz \
+		$(MAINDIR)/subcorpora/$(SRC)-$(TRG)/linenumbers/en_tag_questions$*.test.list.$(SRC)-$(TRG) | gzip > $@
+
+sentences/en_tag_questions%.train.$(SRC)-$(TRG).$(TRG).gz: $(MAINDIR)/datasets/$(SRC)-$(TRG)/train.truecased.$(SRC)-$(TRG).$(TRG).gz \
+		$(MAINDIR)/subcorpora/$(SRC)-$(TRG)/linenumbers/en_tag_questions%.train.list.$(SRC)-$(TRG)
+	[ -d sentences ] || mkdir sentences
+	python3 $(SCRIPTDIR)/get-these-lines-from-numbers.py $(MAINDIR)/datasets/$(SRC)-$(TRG)/train.truecased.$(SRC)-$(TRG).$(TRG).gz \
+		$(MAINDIR)/subcorpora/$(SRC)-$(TRG)/linenumbers/en_tag_questions$*.train.list.$(SRC)-$(TRG) | gzip > $@
+
+sentences/en_tag_questions%.dev1.$(SRC)-$(TRG).$(TRG).gz: $(MAINDIR)/datasets/$(SRC)-$(TRG)/dev1.truecased.$(SRC)-$(TRG).$(TRG).gz \
+		$(MAINDIR)/subcorpora/$(SRC)-$(TRG)/linenumbers/en_tag_questions%.dev1.list.$(SRC)-$(TRG)
+	[ -d sentences ] || mkdir sentences
+	python3 $(SCRIPTDIR)/get-these-lines-from-numbers.py $(MAINDIR)/datasets/$(SRC)-$(TRG)/dev1.truecased.$(SRC)-$(TRG).$(TRG).gz \
+		$(MAINDIR)/subcorpora/$(SRC)-$(TRG)/linenumbers/en_tag_questions$*.dev1.list.$(SRC)-$(TRG) | gzip > $@
+
+sentences/en_tag_questions%.dev2.$(SRC)-$(TRG).$(TRG).gz: $(MAINDIR)/datasets/$(SRC)-$(TRG)/dev2.truecased.$(SRC)-$(TRG).$(TRG).gz \
+		$(MAINDIR)/subcorpora/$(SRC)-$(TRG)/linenumbers/en_tag_questions%.dev2.list.$(SRC)-$(TRG)
+	[ -d sentences ] || mkdir sentences
+	python3 $(SCRIPTDIR)/get-these-lines-from-numbers.py $(MAINDIR)/datasets/$(SRC)-$(TRG)/dev2.truecased.$(SRC)-$(TRG).$(TRG).gz \
+		$(MAINDIR)/subcorpora/$(SRC)-$(TRG)/linenumbers/en_tag_questions$*.dev2.list.$(SRC)-$(TRG) | gzip > $@
+
+sentences/en_tag_questions%.test.$(SRC)-$(TRG).$(TRG).gz: $(MAINDIR)/datasets/$(SRC)-$(TRG)/test.truecased.$(SRC)-$(TRG).$(TRG).gz \
+		$(MAINDIR)/subcorpora/$(SRC)-$(TRG)/linenumbers/en_tag_questions%.test.list.$(SRC)-$(TRG)
+	[ -d sentences ] || mkdir sentences
+	python3 $(SCRIPTDIR)/get-these-lines-from-numbers.py $(MAINDIR)/datasets/$(SRC)-$(TRG)/test.truecased.$(SRC)-$(TRG).$(TRG).gz \
+		$(MAINDIR)/subcorpora/$(SRC)-$(TRG)/linenumbers/en_tag_questions$*.test.list.$(SRC)-$(TRG) | gzip > $@
+
+
