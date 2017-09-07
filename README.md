@@ -63,3 +63,11 @@ Steps to recreate English TQ corpus annotations:
 		* 3 4-gram language models trained using KenLM on (i) Europarl, (ii) Ted-talks (when available), (iii) train set of OpenSubtitles2016
 		* Symmetrised alignments, tuned with Kbmira
 * Tokenise all translations: ``MElt -l en -t -x -no_s -M -K and name as testset.translated.melttok.{cs,de}-en``
+
+
+
+## Tag Question classification ##
+* ``cd classify/lang_pair``
+* ``bash classify.sh``
+
+Models are stored in model-seq/ and model-one/
