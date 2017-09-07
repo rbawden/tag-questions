@@ -1,0 +1,167 @@
+OSDIR=/Volumes/Mammoth/data/OpenSubtitles2016/raw
+TRUECASINGDIR=/Users/rbawden/Documents/tools/mosesdecoder/scripts/recaser
+MAINDIR=/Users/rbawden/Documents/work/tag-questions-opensubs
+SCRIPTDIR=$(MAINDIR)/scripts
+
+
+.SECONDARY:
+
+all:
+	echo "Please specify a target"
+
+extract:	$(SCRIPTDIR)/create-open-subs-corpus.py \
+				$(OSDIR)/alignments.$(ORIGSRC)-$(ORIGTRG).xml.gz
+	python $(SCRIPTDIR)/create-open-subs-corpus.py \
+		-r $(OSDIR) -a $(OSDIR)/alignments.$(ORIGSRC)-$(ORIGTRG).xml.gz \
+		-o raw.$(SRC)-$(TRG) -s $(ORIGSRC) -t $(ORIGTRG) | gzip > filminfo.original.list.$(SRC)-$(TRG).gz
+	touch $@
+
+preprocess: preprocess.$(SRC) preprocess.$(TRG)
+	touch $@
+
+preprocess.%: train.truecased.$(SRC)-$(TRG).%.gz dev1.truecased.$(SRC)-$(TRG).%.gz \
+		dev2.truecased.$(SRC)-$(TRG).%.gz test.truecased.$(SRC)-$(TRG).%.gz \
+		train.noblank.$(SRC)-$(TRG).%.gz dev1.noblank.$(SRC)-$(TRG).%.gz \
+		dev2.noblank.$(SRC)-$(TRG).%.gz test.noblank.$(SRC)-$(TRG).%.gz \
+		truecased.$(SRC)-$(TRG).%.gz noblank.$(SRC)-$(TRG).%.gz \
+		melttok.$(SRC)-$(TRG).%.gz train.melttok.$(SRC)-$(TRG).%.gz \
+		dev1.melttok.$(SRC)-$(TRG).%.gz dev2.melttok.$(SRC)-$(TRG).%.gz \
+		test.melttok.$(SRC)-$(TRG).%.gz
+	touch $@
+
+precleaned.$(SRC)-$(TRG).%.gz: raw.$(SRC)-$(TRG).%.gz $(SCRIPTDIR)/fix_mixed_encodings.pl
+	@echo
+	@echo PRECLEANING $*
+	if  [ "z$*" == "zen" -o "z$*" == "zfr" ]; then \
+		zcat $< | perl $(SCRIPTDIR)/fix_mixed_encodings.pl | gzip > $@; \
+	else \
+		zcat $< | perl -pe 's/\r//g' | gzip > $@; \
+	fi
+
+birecoded.$(SRC)-$(TRG).%.gz: precleaned.$(SRC)-$(TRG).%.gz
+	@echo
+	@echo BIRECODING $*
+	zcat $< | recode -f u8..unicode | recode unicode..u8 | gzip > $@
+
+cleaned.$(SRC)-$(TRG).%.gz: birecoded.$(SRC)-$(TRG).%.gz $(SCRIPTDIR)/clean-up-subs.py
+	@echo
+	@echo CLEANING $*
+	python3 $(SCRIPTDIR)/clean-up-subs.py $< $* | gzip > $@
+
+noblank.$(SRC)-$(TRG).$(SRC).gz noblank.$(SRC)-$(TRG).$(TRG).gz filminfo.final.list.$(SRC)-$(TRG).gz: \
+		cleaned.$(SRC)-$(TRG).$(SRC).gz cleaned.$(SRC)-$(TRG).$(TRG).gz $(SCRIPTDIR)/filter-empty-lines.py
+	@echo
+	@echo REMOVING BLANK LINES $(SRC) AND $(TRG)
+	python3 $(SCRIPTDIR)/filter-empty-lines.py \
+		cleaned.$(SRC)-$(TRG).$(SRC).gz cleaned.$(SRC)-$(TRG).$(TRG).gz \
+		noblank.$(SRC)-$(TRG).$(SRC).gz noblank.$(SRC)-$(TRG).$(TRG).gz \
+		> $$$$; \
+	python3 $(SCRIPTDIR)/recalculate-film-lines.py filminfo.original.list.$(SRC)-$(TRG).gz $$$$ \
+		| gzip > filminfo.final.list.$(SRC)-$(TRG).gz; \
+	rm $$$$
+
+melt-mtK.$(SRC)-$(TRG).%.gz: noblank.$(SRC)-$(TRG).%.gz
+	@echo
+	@echo MELT-MTK $*
+	zcat $< | MElt -l $* -t -x -no_s -M -K | gzip > $@
+
+melttok.$(SRC)-$(TRG).%.gz: melt-mtK.$(SRC)-$(TRG).%.gz
+	@echo
+	@echo REMOVING ACCOLADE INFORMATION $*
+	zcat $< | perl -pe "s/{[^{}]*} //g; s/^ //g" | gzip > $@
+
+train.list.$(SRC)-$(TRG) dev1.list.$(SRC)-$(TRG) dev2.list.$(SRC)-$(TRG) test.list.$(SRC)-$(TRG): \
+		 filminfo.final.list.$(SRC)-$(TRG).gz $(SCRIPTDIR)/divide-opensubs-sets.py
+	@echo
+	@echo DIVIDING INTO DATASETS
+	python3 $(SCRIPTDIR)/divide-opensubs-sets.py \
+		filminfo.final.list.$(SRC)-$(TRG).gz \
+		55 15 15 15 \
+		train.list.$(SRC)-$(TRG) dev1.list.$(SRC)-$(TRG) dev2.list.$(SRC)-$(TRG) test.list.$(SRC)-$(TRG) \
+		2> datasets.info.$(SRC)-$(TRG)
+
+train.noblank.$(SRC)-$(TRG).%.gz: noblank.$(SRC)-$(TRG).%.gz train.list.$(SRC)-$(TRG) \
+		$(SCRIPTDIR)/get-these-lines-from-numbers.py
+	python3 $(SCRIPTDIR)/get-these-lines-from-numbers.py $< train.list.$(SRC)-$(TRG) | gzip > $@
+
+dev1.noblank.$(SRC)-$(TRG).%.gz: noblank.$(SRC)-$(TRG).%.gz dev1.list.$(SRC)-$(TRG) \
+	$(SCRIPTDIR)/get-these-lines-from-numbers.py
+	python3 $(SCRIPTDIR)/get-these-lines-from-numbers.py $< dev1.list.$(SRC)-$(TRG) | gzip > $@
+
+dev2.noblank.$(SRC)-$(TRG).%.gz: noblank.$(SRC)-$(TRG).%.gz dev2.list.$(SRC)-$(TRG) \
+		$(SCRIPTDIR)/get-these-lines-from-numbers.py
+	python3 $(SCRIPTDIR)/get-these-lines-from-numbers.py $< dev2.list.$(SRC)-$(TRG) | gzip > $@
+
+test.noblank.$(SRC)-$(TRG).%.gz: noblank.$(SRC)-$(TRG).%.gz test.list.$(SRC)-$(TRG) \
+		$(SCRIPTDIR)/get-these-lines-from-numbers.py
+	python3 $(SCRIPTDIR)/get-these-lines-from-numbers.py $< test.list.$(SRC)-$(TRG) | gzip > $@
+
+train.melttok.$(SRC)-$(TRG).%.gz: melttok.$(SRC)-$(TRG).%.gz train.list.$(SRC)-$(TRG) \
+		$(SCRIPTDIR)/get-these-lines-from-numbers.py
+	python3 $(SCRIPTDIR)/get-these-lines-from-numbers.py melttok.$(SRC)-$(TRG).$*.gz train.list.$(SRC)-$(TRG) \
+		| gzip > train.melttok.$(SRC)-$(TRG).$*.gz
+
+dev1.melttok.$(SRC)-$(TRG).%.gz: melttok.$(SRC)-$(TRG).%.gz dev1.list.$(SRC)-$(TRG) \
+		$(SCRIPTDIR)/get-these-lines-from-numbers.py
+	python3 $(SCRIPTDIR)/get-these-lines-from-numbers.py melttok.$(SRC)-$(TRG).$*.gz dev1.list.$(SRC)-$(TRG) \
+		| gzip > dev1.melttok.$(SRC)-$(TRG).$*.gz
+
+dev2.melttok.$(SRC)-$(TRG).%.gz: melttok.$(SRC)-$(TRG).%.gz dev2.list.$(SRC)-$(TRG) \
+		$(SCRIPTDIR)/get-these-lines-from-numbers.py
+	python3 $(SCRIPTDIR)/get-these-lines-from-numbers.py melttok.$(SRC)-$(TRG).$*.gz dev2.list.$(SRC)-$(TRG) \
+		| gzip > dev2.melttok.$(SRC)-$(TRG).$*.gz
+
+test.melttok.$(SRC)-$(TRG).%.gz: melttok.$(SRC)-$(TRG).%.gz test.list.$(SRC)-$(TRG) \
+		$(SCRIPTDIR)/get-these-lines-from-numbers.py
+	python3 $(SCRIPTDIR)/get-these-lines-from-numbers.py melttok.$(SRC)-$(TRG).$*.gz test.list.$(SRC)-$(TRG) \
+		| gzip > test.melttok.$(SRC)-$(TRG).$*.gz
+
+truecase-model.$(SRC)-$(TRG).$(SRC): train.melttok.$(SRC)-$(TRG).$(SRC).gz $(SRCTRUECASINGDATA) \
+		$(TRUECASINGDIR)/train-truecaser.perl
+	@echo
+	@echo TRAINING TRUECASE MODEL $(SRC)
+	zcat $(SRCTRUECASINGDATA) $< > $$$$; \
+	$(TRUECASINGDIR)/train-truecaser.perl \
+		--model truecase-model.$(SRC)-$(TRG).$(SRC) \
+		--corpus $$$$; \
+	rm $$$$
+
+truecase-model.$(SRC)-$(TRG).$(TRG): train.melttok.$(SRC)-$(TRG).$(TRG).gz $(TRGTRUECASINGDATA) \
+		$(TRUECASINGDIR)/train-truecaser.perl
+	@echo
+	@echo TRAINING TRUECASE MODEL $(TRG)
+	zcat $(TRGTRUECASINGDATA) $< > $$$$; \
+	$(TRUECASINGDIR)/train-truecaser.perl \
+		--model truecase-model.$(SRC)-$(TRG).$(TRG) \
+		--corpus $$$$; \
+	rm $$$$
+
+truecased.$(SRC)-$(TRG).%.gz: melttok.$(SRC)-$(TRG).%.gz truecase-model.$(SRC)-$(TRG).% \
+		$(TRUECASINGDIR)/truecase.perl
+	@echo
+	@echo TRUECASING $*
+	zcat $< | $(TRUECASINGDIR)/truecase.perl --model truecase-model.$(SRC)-$(TRG).$* | gzip > $@
+
+train.truecased.$(SRC)-$(TRG).%.gz: truecased.$(SRC)-$(TRG).%.gz train.list.$(SRC)-$(TRG) \
+		$(SCRIPTDIR)/get-these-lines-from-numbers.py
+	python3 $(SCRIPTDIR)/get-these-lines-from-numbers.py truecased.$(SRC)-$(TRG).$*.gz train.list.$(SRC)-$(TRG) | gzip > $@
+
+dev1.truecased.$(SRC)-$(TRG).%.gz: truecased.$(SRC)-$(TRG).%.gz dev1.list.$(SRC)-$(TRG) \
+		$(SCRIPTDIR)/get-these-lines-from-numbers.py
+	python3 $(SCRIPTDIR)/get-these-lines-from-numbers.py truecased.$(SRC)-$(TRG).$*.gz dev1.list.$(SRC)-$(TRG) | gzip > $@
+
+dev2.truecased.$(SRC)-$(TRG).%.gz: truecased.$(SRC)-$(TRG).%.gz dev2.list.$(SRC)-$(TRG) \
+		$(SCRIPTDIR)/get-these-lines-from-numbers.py
+	python3 $(SCRIPTDIR)/get-these-lines-from-numbers.py truecased.$(SRC)-$(TRG).$*.gz dev2.list.$(SRC)-$(TRG) | gzip > $@
+
+test.truecased.$(SRC)-$(TRG).%.gz: truecased.$(SRC)-$(TRG).%.gz test.list.$(SRC)-$(TRG) \
+		$(SCRIPTDIR)/get-these-lines-from-numbers.py
+	python3 $(SCRIPTDIR)/get-these-lines-from-numbers.py truecased.$(SRC)-$(TRG).$*.gz test.list.$(SRC)-$(TRG) | gzip > $@
+
+
+
+
+
+
+
+
