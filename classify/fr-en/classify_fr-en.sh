@@ -2,14 +2,16 @@ SRC=fr
 TRG=en
 
 TAGDIR=/Users/rbawden/Documents/work/tag-questions-opensubs/
+VW=/Users/rbawden/Documents/tools/vowpal_wabbit/vowpalwabbit/vw
+
 EXPDIR=$TAGDIR/classify/$SRC-$TRG  # where the experiment is kept
 SCRIPTDIR=$TAGDIR/scripts
 if [ $SRC == "fr" ]; then
     LEX=None
 else
-    LEX=/Users/rbawden/data/lexica/lexicon-$SRC.ftl.gz
+    LEX=$TAGDIR/resources/lexicon-$SRC.ftl.gz
 fi
-VW=/Users/rbawden/Documents/tools/vowpal_wabbit/vowpalwabbit/vw
+
 
 
 # devsmall and testsmall
@@ -33,8 +35,6 @@ for folder in gold gtests references pred-seq pred-one model-seq model-seq/tunin
 		  model-one model-one/tuning baseline data; do
     [ -d $EXPDIR/$folder ] || mkdir $EXPDIR/$folder
 done
-
-<<COMMENT
 
 # get gold data and postedited translations
 echo "Getting gold labels"
@@ -242,7 +242,7 @@ done
 
 # get data w/ labels gram/misc/none and gram/misctype/none
 for tagtype in gramMiscNone gramMiscTypeNone; do
-    for set in train trainsmall devsmall testsmall; do
+    for set in trainsmall devsmall testsmall; do
 	zcat $EXPDIR/data/$set.real.$SRC-$TRG.gz | cut -d " " -f2- > tmp.data.$$
 	zcat $EXPDIR/gold/$set.$tagtype.$SRC-$TRG.gz > tmp.gold.$$
 	paste -d " " tmp.gold.$$ tmp.data.$$ | gzip > $EXPDIR/data/$set.$tagtype.$SRC-$TRG.gz
@@ -250,19 +250,17 @@ for tagtype in gramMiscNone gramMiscTypeNone; do
     done
 done
 
-#COMMENT
 #trainsmall devsmall
 # get named labels, num labels etc.
 echo "Getting label names and numbers and counts"
 for tagtype in gramMiscNone gramMiscTypeNone real; do
-    for set in train ; do
+    for set in trainsmall; do
 		zcat $EXPDIR/gold/$set.$tagtype.$SRC-$TRG.gz | sort | uniq -c > $EXPDIR/model-seq/classcounts.$tagtype.$set.$SRC-$TRG
 		zcat $EXPDIR/gold/$set.$tagtype.$SRC-$TRG.gz | sort -u | perl -pe 's/\n/,/g' | perl -pe 's/,$//g' > $EXPDIR/model-seq/named_labels.$tagtype.$set.$SRC-$TRG
 		cat $EXPDIR/model-seq/named_labels.$tagtype.$set.$SRC-$TRG | perl -pe 's/$/\n/' | perl -pe 's/,/\n/g'  | wc -l | perl -pe 's/^ *//' > $EXPDIR/model-seq/num_labels.$tagtype.$set.$SRC-$TRG
     done
 done
 
-#<<COMMENT
 
 # train all-in-one model
 echo "Training all-in-one model"
@@ -284,37 +282,37 @@ for weight in 0 0.00005 0.001 ; do \
 done 
 rm $EXPDIR/model-one/tuningtmp
 
-COMMENT
+
 
 # train sequential model - predict TQ forms (none and lex and gram TQ forms)
-zcat $EXPDIR/data/testsmall.gramMiscNone.$SRC-$TRG.gz  \
-    | cut -d" " -f2- > $EXPDIR/model-seq/tuning/tuningtmp.testsmall
+zcat $EXPDIR/data/devsmall.gramMiscNone.$SRC-$TRG.gz  \
+    | cut -d" " -f2- > $EXPDIR/model-seq/tuning/tuningtmp.devsmall
 
 for lambda in 0 0.0001 0.001 0.01 0.25 0.5 0.75 1 ; do
     echo "************** Starting 1st weight @ $lambda **************"                                                                                                                               
     bash $SCRIPTDIR/train_model_gramMiscNone.sh \
-		 $lambda testsmall $SRC-$TRG $SCRIPTDIR $VW $EXPDIR/model-seq/tuning $EXPDIR                                                                                   
+		 $lambda devsmall $SRC-$TRG $SCRIPTDIR $VW $EXPDIR/model-seq/tuning $EXPDIR                                                                                   
     
     for lambdalex in 0 0.0001 0.001 0.01 0.25 0.5 0.75 1 ; do
 		echo "****** Lex weight @ $lambdalex ******"
 		bash $SCRIPTDIR/train_model_lexgram.sh \
-			 $lambda $lambdalex testsmall $SRC-$TRG $SCRIPTDIR $VW \
-			 $EXPDIR/model-seq/tuning $EXPDIR >> $EXPDIR/model-seq/tuningweights.testsmall.$SRC-$TRG 
+			 $lambda $lambdalex devsmall $SRC-$TRG $SCRIPTDIR $VW \
+			 $EXPDIR/model-seq/tuning $EXPDIR >> $EXPDIR/model-seq/tuningweights.devsmall.$SRC-$TRG 
 		
-		#rm $EXPDIR/model-seq/tuning/$lambda.$lambdalex.trainsmall.lex.$SRC-$TRG
-		#rm $EXPDIR/model-seq/tuning/pred.$lambda.$lambdalex.testsmall.lex.$SRC-$TRG 
-		#rm $EXPDIR/model-seq/tuning/pred.$lambda.$lambdalex.testsmall.real.final.$SRC-$TRG 
-		#rm $EXPDIR/model-seq/tuning/pred.$lambda.$lambdalex.testsmall.restucklex.$SRC-$TRG 
-		#rm $EXPDIR/model-seq/tuning/pred.$lambda.$lambdalex.testsmall.gramMiscTypeNone.$SRC-$TRG
+		rm $EXPDIR/model-seq/tuning/$lambda.$lambdalex.trainsmall.lex.$SRC-$TRG
+		rm $EXPDIR/model-seq/tuning/pred.$lambda.$lambdalex.devsmall.lex.$SRC-$TRG 
+		rm $EXPDIR/model-seq/tuning/pred.$lambda.$lambdalex.devsmall.real.final.$SRC-$TRG 
+		rm $EXPDIR/model-seq/tuning/pred.$lambda.$lambdalex.devsmall.restucklex.$SRC-$TRG 
+		rm $EXPDIR/model-seq/tuning/pred.$lambda.$lambdalex.devsmall.gramMiscTypeNone.$SRC-$TRG
     done
-    #rm $EXPDIR/model-seq/tuning/$lambda.trainsmall.gramMiscNone.$SRC-$TRG 
-    #rm $EXPDIR/model-seq/tuning/pred.$lambda.testsmall.gramMiscNone.$SRC-$TRG 
-    #rm $EXPDIR/model-seq/tuning/pred.$lambda.trainsmall.gramMiscNone.$SRC-$TRG
-    #rm $EXPDIR/model-seq/tuning/pred.$lambda.$lambdalex.testsmall.real.final.$SRC-$TRG
+    rm $EXPDIR/model-seq/tuning/$lambda.trainsmall.gramMiscNone.$SRC-$TRG 
+    rm $EXPDIR/model-seq/tuning/pred.$lambda.devsmall.gramMiscNone.$SRC-$TRG 
+    rm $EXPDIR/model-seq/tuning/pred.$lambda.trainsmall.gramMiscNone.$SRC-$TRG
+    rm $EXPDIR/model-seq/tuning/pred.$lambda.$lambdalex.devsmall.real.final.$SRC-$TRG
 done 
-rm $EXPDIR/model-seq/tuning/tuningtmp.testsmall $EXPDIR/model-seq/tuning/lexlines.testsmall
+rm $EXPDIR/model-seq/tuning/tuningtmp.devsmall $EXPDIR/model-seq/tuning/lexlines.devsmall
 rm $EXPDIR/model-seq/tuning/lexlines.trainsmall
-rm $EXPDIR/model-seq/tuning/lexexamples.testsmall 
+rm $EXPDIR/model-seq/tuning/lexexamples.devsmall 
 rm $EXPDIR/model-seq/tuning/lexexamples.trainsmall
 
 
