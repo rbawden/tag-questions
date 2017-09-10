@@ -73,6 +73,7 @@ def get_gramMiscTypesNone(dataset, sourcefile, line_folder, langpair, tagtype, b
         else:
             if binary_search(i+1, gramtags): os.sys.stdout.write("gram\n")
             elif binary_search(i+1, misctags):
+                #os.sys.stderr.write(line+"\n")
                 anchor, tag = get_anchor_and_tag(line.strip())
                 if tag: tag = re.sub("(^["+get_punct()+"]+|["+get_punct()+" ]+$)", "", tag).lower()
                 else: tag="none"
