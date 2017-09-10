@@ -452,8 +452,8 @@ def get_features(dataset_folder, main_folder, ftl_lexicon, lang_pair, dataset, t
     
     #----------------------------------------------
     # gtest files
-    srcg = "testsmall"
-    trgg = "testsmall"
+    srcg = "trainsmall"
+    trgg = "trainsmall"
     uni_g = read_g_file(main_folder+"/classify/"+lang_pair+"/gtests/gtest."+srcg+".1g."+lang_pair+"."+langsrc+".gz", 500)
     bi_g = read_g_file(main_folder+"/classify/"+lang_pair+"/gtests/gtest."+srcg+".2g."+lang_pair+"."+langsrc+".gz", 500)
     tri_g = read_g_file(main_folder+"/classify/"+lang_pair+"/gtests/gtest."+srcg+".3g."+lang_pair+"."+langsrc+".gz", 500)
