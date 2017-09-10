@@ -1,4 +1,4 @@
-SRC=cs
+SRC=de
 TRG=en
 
 TAGDIR=/Users/rbawden/Documents/work/tag-questions-opensubs/
